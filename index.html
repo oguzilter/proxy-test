@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Wayback Vault Ultra - Extractor CDX & Streamer Live</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 3px; }
+    .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .img-card { aspect-ratio: 1 / 1; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .img-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px -5px rgba(59, 130, 246, 0.35); }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- En-tête -->
+  <header class="sticky top-0 z-40 glass-panel border-b border-slate-800/80 px-4 py-3.5 flex items-center justify-between shadow-2xl">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/25">
+        <i class="fa-solid fa-vault text-lg"></i>
+      </div>
+      <div>
+        <h1 class="font-black text-base md:text-lg leading-tight tracking-wide bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+          WAYBACK VAULT <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-1">PRO</span>
+        </h1>
+        <p class="text-[11px] text-slate-400">Extractions d'archives CDX & Streamer Edge</p>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button onclick="runProxyDiagnostic()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-emerald-400 flex items-center gap-2 transition">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        </span>
+        <span class="hidden sm:inline">Proxy Auto-Hébergé</span>
+      </button>
+      
+      <button onclick="toggleConsole()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 flex items-center gap-2 transition">
+        <i class="fa-solid fa-terminal text-blue-400"></i>
+        <span id="logBadge" class="bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded text-[10px] font-mono">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Contenu Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 flex flex-col gap-5">
+
+    <!-- Formulaire de Configuration -->
+    <section class="glass-panel rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4 border border-slate-800/80">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4">
+        
+        <!-- Saisie Cible -->
+        <div class="md:col-span-6 space-y-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-globe text-blue-400"></i> Domaine ou URL Cible
+          </label>
+          <input type="text" id="targetUrl" value="lemonde.fr" placeholder="ex: lemonde.fr"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition shadow-inner">
+        </div>
+
+        <!-- Périmètre -->
+        <div class="md:col-span-3 space-y-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Périmètre</label>
+          <select id="scopeMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+            <option value="domain" selected>Domaine & Sous-domaines (*.site.com/*)</option>
+            <option value="prefix">Page & Sous-dossiers (site.com/*)</option>
+            <option value="exact">URL Exacte uniquement</option>
+          </select>
+        </div>
+
+        <!-- Limite -->
+        <div class="md:col-span-3 space-y-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Limite d'images</label>
+          <select id="limitCount" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
+            <option value="100">100 images</option>
+            <option value="300" selected>300 images</option>
+            <option value="1000">1000 images</option>
+            <option value="2500">2500 images</option>
+          </select>
+        </div>
+
+        <!-- Filtre Format -->
+        <div class="md:col-span-6 space-y-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Formats d'images</label>
+          <select id="formatFilter" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+            <option value="all" selected>Tous les formats (JPG, PNG, GIF, WEBP, SVG)</option>
+            <option value="jpg">JPG / JPEG uniquement</option>
+            <option value="png">PNG uniquement</option>
+            <option value="gif">GIF animés uniquement</option>
+            <option value="webp">WEBP uniquement</option>
+          </select>
+        </div>
+
+        <!-- Filtre Années -->
+        <div class="md:col-span-6 space-y-1">
+          <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Période d'archivage (Optionnel)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <input type="number" id="yearFrom" placeholder="De (ex: 2000)" min="1996" max="2026"
+                   class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-center text-white focus:outline-none focus:border-blue-500">
+            <input type="number" id="yearTo" placeholder="À (ex: 2026)" min="1996" max="2026"
+                   class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-center text-white focus:outline-none focus:border-blue-500">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Actions -->
+      <div class="pt-3 flex flex-wrap gap-3 items-center justify-between border-t border-slate-800/80">
+        <div class="flex items-center gap-2">
+          <button id="btnSearch" onclick="startExtraction()"
+                  class="bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg shadow-blue-600/30 flex items-center gap-2 transition text-sm">
+            <i class="fa-solid fa-rocket"></i> Lancer la recherche
+          </button>
+          
+          <button id="btnStop" onclick="stopExtraction()" disabled
+                  class="bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800/50 font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 transition text-sm disabled:opacity-40 disabled:cursor-not-allowed">
+            <i class="fa-solid fa-stop"></i> Arrêter
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="exportUrlsList()" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-slate-300 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-copy text-blue-400"></i> Copier les URLs
+          </button>
+          <button onclick="exportJson()" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl text-xs font-medium text-slate-300 flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-file-code text-amber-400"></i> Export JSON
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Terminal Terminal -->
+    <section id="consoleSection" class="glass-panel rounded-2xl p-4 border border-slate-800 shadow-2xl flex flex-col gap-2">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
+        <div class="flex items-center gap-2 text-xs font-mono text-blue-400">
+          <i class="fa-solid fa-terminal"></i>
+          <span>CONSOLE DE DIAGNOSTIC RÉSEAU</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="copyLogsToClipboard()" class="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 rounded-lg text-[11px] text-white flex items-center gap-1.5 font-medium transition">
+            <i class="fa-solid fa-copy"></i> Copier les logs
+          </button>
+          <button onclick="clearLogs()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded-lg text-[11px] text-slate-300">Vider</button>
+        </div>
+      </div>
+      <div id="logOutput" class="bg-slate-950 rounded-xl p-3 font-mono text-[11px] leading-relaxed text-slate-300 h-44 overflow-y-auto space-y-1 border border-slate-900 select-text">
+        <div class="text-slate-500">[SYSTEM] Application initialisée. Serveur Proxy Edge configuré.</div>
+      </div>
+    </section>
+
+    <!-- Barre d'état & Filtres Galerie -->
+    <section class="glass-panel rounded-xl px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-3">
+        <span id="statusIndicator" class="flex items-center gap-2 font-medium text-slate-400">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span> En attente
+        </span>
+        <span class="text-slate-800">|</span>
+        <span id="imageCounter" class="font-mono text-slate-300">0 image extraite</span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <input type="text" id="galleryFilter" oninput="filterGallery()" placeholder="Filtrer en direct..."
+               class="bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-blue-500">
+      </div>
+    </section>
+
+    <!-- Galerie -->
+    <section id="galleryContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 min-h-[350px]">
+      <div class="col-span-full flex flex-col items-center justify-center py-24 text-slate-600 gap-3">
+        <i class="fa-solid fa-photo-film text-6xl text-slate-800"></i>
+        <p class="text-sm font-medium">Entrez un nom de domaine ci-dessus pour charger la galerie d'archives.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Visionneuse Lightbox -->
+  <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex flex-col justify-between p-3 sm:p-6">
+    <div class="flex items-center justify-between text-white border-b border-slate-800/80 pb-3">
+      <div id="lightboxMeta" class="text-xs font-mono text-slate-300 truncate max-w-[80%]"></div>
+      <button onclick="closeLightbox()" class="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition">
+        <i class="fa-solid fa-xmark text-xl"></i>
+      </button>
+    </div>
+
+    <div class="flex-1 flex items-center justify-center my-3 relative overflow-hidden">
+      <img id="lightboxImg" src="" alt="Snapshot Image" referrerpolicy="no-referrer"
+           class="max-h-[80vh] max-w-full object-contain rounded-xl shadow-2xl">
+    </div>
+
+    <div class="flex items-center justify-between gap-2 border-t border-slate-800/80 pt-3">
+      <a id="lightboxOriginalLink" href="#" target="_blank" class="px-4 py-2 bg-blue-600/20 hover:bg-blue-600 text-blue-300 hover:text-white border border-blue-500/30 rounded-xl text-xs flex items-center gap-2 transition">
+        <i class="fa-solid fa-external-link"></i> Voir la capture sur Wayback Machine
+      </a>
+      <div class="flex gap-2">
+        <button onclick="prevLightboxImage()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white rounded-xl"><i class="fa-solid fa-chevron-left"></i></button>
+        <button onclick="nextLightboxImage()" class="p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-white rounded-xl"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript App Logic -->
+  <script>
+    let abortController = null;
+    let extractedImages = [];
+    let currentLightboxIndex = -1;
+    let logCount = 0;
+    let logHistoryText = [];
+
+    // Détection automatique de l'origine du Proxy (Cloudflare Pages)
+    const PROXY_BASE = window.location.origin;
+
+    function log(type, msg) {
+      logCount++;
+      const badge = document.getElementById("logBadge");
+      if (badge) badge.innerText = logCount;
+      const logOutput = document.getElementById("logOutput");
+      const time = new Date().toISOString().substring(11, 19);
+
+      const plainLine = "[" + time + "] [" + type + "] " + msg;
+      logHistoryText.push(plainLine);
+
+      if (!logOutput) return;
+      
+      let colorClass = "text-slate-300";
+      if (type === "NET") colorClass = "text-cyan-400";
+      if (type === "OK") colorClass = "text-emerald-400";
+      if (type === "WARN") colorClass = "text-amber-400";
+      if (type === "ERR") colorClass = "text-rose-400 font-bold";
+
+      const line = document.createElement("div");
+      line.className = colorClass;
+      line.innerHTML = '<span class="text-slate-600">[' + time + ']</span> <span class="font-bold">[' + type + ']</span> ' + escapeHtml(msg);
+      logOutput.appendChild(line);
+      logOutput.scrollTop = logOutput.scrollHeight;
+    }
+
+    function copyLogsToClipboard() {
+      const textToCopy = logHistoryText.join("\n");
+      navigator.clipboard.writeText(textToCopy).then(() => alert("Logs copiés dans le presse-papier !"));
+    }
+
+    function toggleConsole() {
+      const sec = document.getElementById("consoleSection");
+      if (sec) sec.classList.toggle("hidden");
+    }
+
+    function clearLogs() {
+      document.getElementById("logOutput").innerHTML = "";
+      logCount = 0;
+      logHistoryText = [];
+      document.getElementById("logBadge").innerText = "0";
+    }
+
+    function cleanDomain(input) {
+      if (!input) return "";
+      return input.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
+    }
+
+    function buildCdxBaseUrl() {
+      const domain = cleanDomain(document.getElementById("targetUrl").value);
+      if (!domain) return null;
+
+      const scope = document.getElementById("scopeMode").value;
+      const limit = document.getElementById("limitCount").value;
+      const yearFrom = document.getElementById("yearFrom").value;
+      const yearTo = document.getElementById("yearTo").value;
+
+      let urlParam = domain;
+      if (scope === "prefix") urlParam = domain + "/*";
+      if (scope === "domain") urlParam = "*." + domain + "/*";
+
+      let cdx = "https://web.archive.org/cdx/search/cdx?url=" + encodeURIComponent(urlParam)
+              + "&fl=timestamp,original,mimetype,statuscode,digest"
+              + "&output=json&limit=" + limit;
+
+      if (yearFrom) cdx += "&from=" + yearFrom + "0101000000";
+      if (yearTo) cdx += "&to=" + yearTo + "1231235959";
+
+      return { cdx, domain };
+    }
+
+    async function startExtraction() {
+      const queryObj = buildCdxBaseUrl();
+      if (!queryObj) {
+        alert("Veuillez saisir un nom de domaine valide.");
+        return;
+      }
+
+      const proxiedUrl = PROXY_BASE + "/?url=" + encodeURIComponent(queryObj.cdx);
+
+      extractedImages = [];
+      document.getElementById("galleryContainer").innerHTML = "";
+      document.getElementById("imageCounter").innerText = "0 image extraite";
+      document.getElementById("btnSearch").disabled = true;
+      document.getElementById("btnStop").disabled = false;
+      document.getElementById("statusIndicator").innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span> Extraction en cours...';
+
+      log("NET", "Démarrage requête CDX pour : " + queryObj.domain);
+      log("NET", "URL Cible : " + proxiedUrl);
+
+      abortController = new AbortController();
+      const startTime = Date.now();
+
+      try {
+        const response = await fetch(proxiedUrl, { signal: abortController.signal });
+        const duration = Date.now() - startTime;
+
+        if (!response.ok) {
+          log("ERR", "❌ Réponse du Proxy HTTP " + response.status + " (" + duration + "ms)");
+          throw new Error("HTTP Status " + response.status);
+        }
+
+        const rawText = await response.text();
+        log("NET", "Données brutes reçues (" + rawText.length + " octets en " + duration + "ms)");
+
+        if (rawText && rawText.trim().startsWith("[")) {
+          const jsonArray = JSON.parse(rawText);
+          log("OK", "✅ Données CDX valides (" + jsonArray.length + " entrées)");
+          processCdxData(jsonArray);
+        } else {
+          log("ERR", "Le serveur a renvoyé du contenu non-JSON.");
+        }
+
+      } catch (err) {
+        if (err.name === "AbortError") {
+          log("WARN", "Extraction interrompue.");
+        } else {
+          log("ERR", "Échec : " + err.message);
+        }
+      } finally {
+        document.getElementById("btnSearch").disabled = false;
+        document.getElementById("btnStop").disabled = true;
+        document.getElementById("statusIndicator").innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Terminé';
+      }
+    }
+
+    function stopExtraction() {
+      if (abortController) abortController.abort();
+    }
+
+    function processCdxData(rows) {
+      if (!rows || rows.length <= 1) {
+        log("WARN", "Aucun registre d'archive trouvé.");
+        return;
+      }
+
+      const formatFilter = document.getElementById("formatFilter").value;
+      const dataRows = rows.slice(1);
+      const seenDigests = new Set();
+      let count = 0;
+
+      dataRows.forEach(row => {
+        const timestamp = row[0];
+        const originalUrl = row[1];
+        const mimetype = row[2] || "";
+        const status = row[3];
+        const digest = row[4];
+
+        let isTargetFormat = mimetype.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg)/i.test(originalUrl);
+        if (formatFilter !== "all") {
+          isTargetFormat = originalUrl.toLowerCase().includes("." + formatFilter);
+        }
+
+        const is200 = status === "200" || status === "200OK";
+
+        if (isTargetFormat && is200 && digest && !seenDigests.has(digest)) {
+          seenDigests.add(digest);
+          
+          const rawImageUrl = "https://web.archive.org/web/" + timestamp + "im_/" + originalUrl;
+          const waybackPageUrl = "https://web.archive.org/web/" + timestamp + "/" + originalUrl;
+
+          const imgObj = { timestamp, originalUrl, rawImageUrl, waybackPageUrl, dateStr: formatDate(timestamp) };
+
+          extractedImages.push(imgObj);
+          renderThumbnail(imgObj, extractedImages.length - 1);
+          count++;
+        }
+      });
+
+      document.getElementById("imageCounter").innerText = count + " images affichées";
+      log("OK", "Génération terminée : " + count + " images uniques chargées");
+    }
+
+    function renderThumbnail(imgObj, index) {
+      const container = document.getElementById("galleryContainer");
+      const card = document.createElement("div");
+      card.className = "img-card glass-panel rounded-xl overflow-hidden relative group cursor-pointer border border-slate-800/80 hover:border-blue-500/60 bg-slate-900/50";
+      card.onclick = () => openLightbox(index);
+
+      card.innerHTML = `
+        <img src="${imgObj.rawImageUrl}" alt="Archive" referrerpolicy="no-referrer" loading="lazy"
+             class="w-full h-full object-cover bg-slate-950"
+             onerror="this.onerror=null; this.parentNode.style.display='none';">
+        <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-2 text-[10px] text-slate-300">
+          <p class="font-mono text-blue-400 font-bold truncate">${imgObj.dateStr}</p>
+          <p class="truncate text-slate-400 font-mono">${escapeHtml(imgObj.originalUrl.replace(/^https?:\/\//,''))}</p>
+        </div>
+      `;
+
+      container.appendChild(card);
+    }
+
+    function formatDate(ts) {
+      if (!ts || ts.length < 8) return ts;
+      return ts.substring(6, 8) + "/" + ts.substring(4, 6) + "/" + ts.substring(0, 4);
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+    }
+
+    function openLightbox(index) {
+      currentLightboxIndex = index;
+      const imgObj = extractedImages[index];
+      if (!imgObj) return;
+
+      document.getElementById("lightboxImg").src = imgObj.rawImageUrl;
+      document.getElementById("lightboxMeta").innerHTML = '<span class="text-blue-400 font-bold">' + imgObj.dateStr + '</span> - ' + escapeHtml(imgObj.originalUrl);
+      document.getElementById("lightboxOriginalLink").href = imgObj.waybackPageUrl;
+      document.getElementById("lightbox").classList.remove("hidden");
+    }
+
+    function closeLightbox() {
+      document.getElementById("lightbox").classList.add("hidden");
+    }
+
+    function prevLightboxImage() {
+      if (currentLightboxIndex > 0) openLightbox(currentLightboxIndex - 1);
+    }
+
+    function nextLightboxImage() {
+      if (currentLightboxIndex < extractedImages.length - 1) openLightbox(currentLightboxIndex + 1);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") prevLightboxImage();
+      if (e.key === "ArrowRight") nextLightboxImage();
+    });
+
+    async function runProxyDiagnostic() {
+      log("NET", "--- Test du Proxy Edge ---");
+      const testCdx = "https://web.archive.org/cdx/search/cdx?url=lemonde.fr&limit=1&output=json";
+      const proxyUrl = PROXY_BASE + "/?url=" + encodeURIComponent(testCdx);
+
+      const t0 = Date.now();
+      try {
+        const res = await fetch(proxyUrl);
+        const dt = Date.now() - t0;
+        if (res.ok) {
+          log("OK", "✅ Proxy opérationnel ! HTTP " + res.status + " (" + dt + "ms)");
+        } else {
+          log("WARN", "⚠️ Échec Proxy : HTTP " + res.status);
+        }
+      } catch (e) {
+        log("ERR", "❌ Proxy non joignable : " + e.message);
+      }
+    }
+
+    function exportUrlsList() {
+      if (!extractedImages.length) return alert("Aucune image à exporter.");
+      const urls = extractedImages.map(img => img.rawImageUrl).join("\n");
+      navigator.clipboard.writeText(urls).then(() => alert(extractedImages.length + " URLs copiées !"));
+    }
+
+    function exportJson() {
+      if (!extractedImages.length) return alert("Aucune image à exporter.");
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(extractedImages, null, 2));
+      const anchor = document.createElement('a');
+      anchor.setAttribute("href", dataStr);
+      anchor.setAttribute("download", "wayback_extract.json");
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+    }
+
+    function filterGallery() {
+      const q = document.getElementById("galleryFilter").value.toLowerCase();
+      const container = document.getElementById("galleryContainer");
+      const cards = container.children;
+      
+      extractedImages.forEach((img, idx) => {
+        if (cards[idx]) {
+          const match = img.originalUrl.toLowerCase().includes(q) || img.dateStr.includes(q);
+          cards[idx].style.display = match ? "block" : "none";
+        }
+      });
+    }
+  </script>
+</body>
+</html>
