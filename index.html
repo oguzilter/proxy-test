@@ -66,7 +66,7 @@
                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition shadow-inner">
         </div>
 
-        <!-- Périmètre -->
+        <!-- Périmètre Mode -->
         <div class="md:col-span-3 space-y-1">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Périmètre</label>
           <select id="scopeMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
@@ -152,7 +152,7 @@
         </div>
       </div>
       <div id="logOutput" class="bg-slate-950 rounded-xl p-3 font-mono text-[11px] leading-relaxed text-slate-300 h-44 overflow-y-auto space-y-1 border border-slate-900 select-text">
-        <div class="text-slate-500">[SYSTEM] Application initialisée sur Cloudflare Pages Middleware.</div>
+        <div class="text-slate-500">[SYSTEM] Application initialisée sur Cloudflare Pages.</div>
       </div>
     </section>
 
@@ -214,6 +214,7 @@
     let logCount = 0;
     let logHistoryText = [];
 
+    // Utilise l'adresse dynamique du projet Cloudflare Pages
     const PROXY_BASE = window.location.origin;
 
     function log(type, msg) {
