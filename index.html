@@ -276,7 +276,6 @@
       if (scope === "prefix") urlParam = domain + "/*";
       if (scope === "domain") urlParam = "*." + domain + "/*";
 
-      // On passe urlParam brut ici car encodeURIComponent sera appliqué sur l'ensemble de la chaîne 'cdx' dans startExtraction()
       let cdx = "https://web.archive.org/cdx/search/cdx?url=" + urlParam
               + "&fl=timestamp,original,mimetype,statuscode,digest"
               + "&output=json&limit=" + limit;
@@ -314,7 +313,7 @@
         const duration = Date.now() - startTime;
 
         if (!response.ok) {
-          log("ERR", "❌ Réponse du Proxy HTTP " + response.status + " (" + duration + "ms)");
+          log("ERR", "❌ Erreur HTTP " + response.status + " (" + duration + "ms)");
           throw new Error("HTTP Status " + response.status);
         }
 
@@ -326,7 +325,8 @@
           log("OK", "✅ Données CDX valides (" + jsonArray.length + " entrées)");
           processCdxData(jsonArray);
         } else {
-          log("ERR", "Le serveur a renvoyé du contenu non-JSON.");
+          const preview = rawText.substring(0, 180).replace(/\s+/g, " ");
+          log("ERR", "Réponse non-JSON reçue : " + preview);
         }
 
       } catch (err) {
