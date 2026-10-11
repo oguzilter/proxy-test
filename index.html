@@ -28,7 +28,7 @@
       </div>
       <div>
         <h1 class="font-black text-base md:text-lg leading-tight tracking-wide bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-          WAYBACK VAULT <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-1">ULTRA</span>
+          WAYBACK VAULT <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-1">v2.2 Fast</span>
         </h1>
         <p class="text-[11px] text-slate-400">Cloudflare Pages Edge Proxy</p>
       </div>
@@ -66,7 +66,7 @@
                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition shadow-inner">
         </div>
 
-        <!-- Périmètre Mode -->
+        <!-- Périmètre -->
         <div class="md:col-span-3 space-y-1">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Périmètre</label>
           <select id="scopeMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
@@ -150,7 +150,7 @@
         </div>
       </div>
       <div id="logOutput" class="bg-slate-950 rounded-xl p-3 font-mono text-[11px] leading-relaxed text-slate-300 h-44 overflow-y-auto space-y-1 border border-slate-900 select-text">
-        <div class="text-slate-500">[SYSTEM] Application initialisée. Filtre d'images API configuré.</div>
+        <div class="text-slate-500">[SYSTEM] Application v2.2 Fast initialisée. Filtre d'indexation rapide activé.</div>
       </div>
     </section>
 
@@ -180,7 +180,7 @@
 
   </main>
 
-  <!-- Visionneuse Lightbox -->
+  <!-- Lightbox -->
   <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex flex-col justify-between p-3 sm:p-6">
     <div class="flex items-center justify-between text-white border-b border-slate-800/80 pb-3">
       <div id="lightboxMeta" class="text-xs font-mono text-slate-300 truncate max-w-[80%]"></div>
@@ -271,18 +271,19 @@
       const yearTo = document.getElementById("yearTo").value;
       const formatFilter = document.getElementById("formatFilter").value;
 
-      // Filtre explicite envoyé à l'API Archive.org
-      let filterParam = "&filter=mimetype:image/.*";
+      // Filtre directement sur les cles d'URL (indexation ultra-rapide sans scan HTML)
+      let formatRegex = "(jpg|jpeg|png|gif|webp|svg)";
       if (formatFilter !== "all") {
-        filterParam = "&filter=original:.*\\." + formatFilter;
+        formatRegex = formatFilter;
       }
 
       let cdx = "https://web.archive.org/cdx/search/cdx?url=" + encodeURIComponent(domain)
               + "&matchType=" + scope
-              + filterParam
+              + "&filter=urlkey:.*\\." + formatRegex
               + "&filter=statuscode:200"
               + "&fl=timestamp,original,mimetype,statuscode,digest"
               + "&collapse=digest"
+              + "&fastLatest=true"
               + "&output=json&limit=" + limit;
 
       if (yearFrom) cdx += "&from=" + yearFrom + "0101000000";
@@ -307,7 +308,8 @@
       document.getElementById("btnStop").disabled = false;
       document.getElementById("statusIndicator").innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span> Extraction en cours...';
 
-      log("NET", "Requête CDX vers Archive.org pour : " + queryObj.domain);
+      log("NET", "Requête CDX v2.2 Fast vers Archive.org...");
+      log("NET", "URL Cible : " + proxiedUrl);
 
       abortController = new AbortController();
       const startTime = Date.now();
@@ -317,7 +319,7 @@
         const duration = Date.now() - startTime;
 
         if (response.status === 429) {
-          log("ERR", "❌ Archive.org limite temporairement l'IP (HTTP 429). Patientez 15 secondes.");
+          log("ERR", "❌ Archive.org limite l'IP (HTTP 429). Patientez 15 secondes.");
           throw new Error("HTTP 429 Rate Limit");
         }
 
