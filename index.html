@@ -7,16 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
-          }
-        }
-      }
-    };
+    tailwind.config = { darkMode: 'class' };
   </script>
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -37,9 +28,9 @@
       </div>
       <div>
         <h1 class="font-black text-base md:text-lg leading-tight tracking-wide bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-          WAYBACK VAULT <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-1">PRO</span>
+          WAYBACK VAULT <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30 ml-1">ULTRA</span>
         </h1>
-        <p class="text-[11px] text-slate-400">Extractions d'archives CDX & Streamer Edge</p>
+        <p class="text-[11px] text-slate-400">Cloudflare Pages &amp; Edge Middleware</p>
       </div>
     </div>
 
@@ -49,7 +40,7 @@
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
           <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
         </span>
-        <span class="hidden sm:inline">Proxy Auto-Hébergé</span>
+        <span class="hidden sm:inline">Pages Function (Active)</span>
       </button>
       
       <button onclick="toggleConsole()" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-medium text-slate-300 flex items-center gap-2 transition">
@@ -79,8 +70,8 @@
         <div class="md:col-span-3 space-y-1">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Périmètre</label>
           <select id="scopeMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-            <option value="domain" selected>Domaine & Sous-domaines (*.site.com/*)</option>
-            <option value="prefix">Page & Sous-dossiers (site.com/*)</option>
+            <option value="domain" selected>Domaine &amp; Sous-domaines (*.site.com/*)</option>
+            <option value="prefix">Page &amp; Sous-dossiers (site.com/*)</option>
             <option value="exact">URL Exacte uniquement</option>
           </select>
         </div>
@@ -146,7 +137,7 @@
       </div>
     </section>
 
-    <!-- Terminal Terminal -->
+    <!-- Terminal -->
     <section id="consoleSection" class="glass-panel rounded-2xl p-4 border border-slate-800 shadow-2xl flex flex-col gap-2">
       <div class="flex items-center justify-between pb-2 border-b border-slate-800/80">
         <div class="flex items-center gap-2 text-xs font-mono text-blue-400">
@@ -161,7 +152,7 @@
         </div>
       </div>
       <div id="logOutput" class="bg-slate-950 rounded-xl p-3 font-mono text-[11px] leading-relaxed text-slate-300 h-44 overflow-y-auto space-y-1 border border-slate-900 select-text">
-        <div class="text-slate-500">[SYSTEM] Application initialisée. Serveur Proxy Edge configuré.</div>
+        <div class="text-slate-500">[SYSTEM] Application initialisée sur Cloudflare Pages Middleware.</div>
       </div>
     </section>
 
@@ -185,7 +176,7 @@
     <section id="galleryContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 min-h-[350px]">
       <div class="col-span-full flex flex-col items-center justify-center py-24 text-slate-600 gap-3">
         <i class="fa-solid fa-photo-film text-6xl text-slate-800"></i>
-        <p class="text-sm font-medium">Entrez un nom de domaine ci-dessus pour charger la galerie d'archives.</p>
+        <p class="text-sm font-medium">Saisissez un nom de domaine ci-dessus pour charger la galerie d'archives.</p>
       </div>
     </section>
 
@@ -216,7 +207,6 @@
     </div>
   </div>
 
-  <!-- JavaScript App Logic -->
   <script>
     let abortController = null;
     let extractedImages = [];
@@ -224,7 +214,6 @@
     let logCount = 0;
     let logHistoryText = [];
 
-    // Détection automatique de l'origine du Proxy (Cloudflare Pages)
     const PROXY_BASE = window.location.origin;
 
     function log(type, msg) {
@@ -287,7 +276,8 @@
       if (scope === "prefix") urlParam = domain + "/*";
       if (scope === "domain") urlParam = "*." + domain + "/*";
 
-      let cdx = "https://web.archive.org/cdx/search/cdx?url=" + encodeURIComponent(urlParam)
+      // On passe urlParam brut ici car encodeURIComponent sera appliqué sur l'ensemble de la chaîne 'cdx' dans startExtraction()
+      let cdx = "https://web.archive.org/cdx/search/cdx?url=" + urlParam
               + "&fl=timestamp,original,mimetype,statuscode,digest"
               + "&output=json&limit=" + limit;
 
