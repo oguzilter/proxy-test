@@ -66,12 +66,12 @@
                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition shadow-inner">
         </div>
 
-        <!-- Périmètre Mode -->
+        <!-- Périmètre -->
         <div class="md:col-span-3 space-y-1">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Périmètre</label>
           <select id="scopeMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-            <option value="domain" selected>Domaine &amp; Sous-domaines (*.site.com/*)</option>
-            <option value="prefix">Page &amp; Sous-dossiers (site.com/*)</option>
+            <option value="prefix" selected>Page &amp; Sous-dossiers (site.com/*)</option>
+            <option value="domain">Domaine &amp; Sous-domaines (*.site.com/*)</option>
             <option value="exact">URL Exacte uniquement</option>
           </select>
         </div>
@@ -80,10 +80,9 @@
         <div class="md:col-span-3 space-y-1">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Limite d'images</label>
           <select id="limitCount" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
-            <option value="100">100 images</option>
-            <option value="300" selected>300 images</option>
+            <option value="100" selected>100 images (Recommandé)</option>
+            <option value="300">300 images</option>
             <option value="1000">1000 images</option>
-            <option value="2500">2500 images</option>
           </select>
         </div>
 
@@ -214,7 +213,6 @@
     let logCount = 0;
     let logHistoryText = [];
 
-    // Utilise l'adresse dynamique du projet Cloudflare Pages
     const PROXY_BASE = window.location.origin;
 
     function log(type, msg) {
@@ -277,8 +275,10 @@
       if (scope === "prefix") urlParam = domain + "/*";
       if (scope === "domain") urlParam = "*." + domain + "/*";
 
+      // &collapse=digest permet d'éviter la surcharge d'Archive.org et résout l'erreur 429
       let cdx = "https://web.archive.org/cdx/search/cdx?url=" + urlParam
               + "&fl=timestamp,original,mimetype,statuscode,digest"
+              + "&collapse=digest"
               + "&output=json&limit=" + limit;
 
       if (yearFrom) cdx += "&from=" + yearFrom + "0101000000";
@@ -312,6 +312,11 @@
       try {
         const response = await fetch(proxiedUrl, { signal: abortController.signal });
         const duration = Date.now() - startTime;
+
+        if (response.status === 429) {
+          log("ERR", "❌ Archive.org vous limite (HTTP 429). Attendez quelques secondes ou réduisez le périmètre.");
+          throw new Error("HTTP 429 Rate Limit");
+        }
 
         if (!response.ok) {
           log("ERR", "❌ Erreur HTTP " + response.status + " (" + duration + "ms)");
@@ -349,7 +354,7 @@
 
     function processCdxData(rows) {
       if (!rows || rows.length <= 1) {
-        log("WARN", "Aucun registre d'archive trouvé.");
+        log("WARN", "Aucun registre d'archive trouvé pour ces critères.");
         return;
       }
 
