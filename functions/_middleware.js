@@ -6,7 +6,6 @@ export async function onRequest(context) {
     "Access-Control-Allow-Headers": "*",
   };
 
-  // Traitement des requêtes d'autorisation préalable CORS
   if (request.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,17 +13,17 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const targetUrl = url.searchParams.get("url");
 
-  // Si pas de paramètre ?url=, laisser Cloudflare afficher index.html
   if (!targetUrl) {
     return context.next();
   }
 
   try {
     const response = await fetch(targetUrl, {
-      method: request.method,
+      method: "GET",
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        "Accept": "*/*"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7"
       }
     });
 
@@ -40,7 +39,7 @@ export async function onRequest(context) {
     });
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: `Erreur Proxy Cloudflare: ${err.message}` }),
+      JSON.stringify({ error: `Erreur Proxy Edge : ${err.message}` }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
