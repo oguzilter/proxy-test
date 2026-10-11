@@ -13,10 +13,12 @@ export async function onRequest(context) {
   const url = new URL(request.url);
   const targetUrl = url.searchParams.get("url");
 
+  // Si pas de paramètre ?url=, Cloudflare sert index.html
   if (!targetUrl) {
     return context.next();
   }
 
+  // Relais de la requête vers Archive.org sans restrictions CORS
   try {
     const response = await fetch(targetUrl, {
       method: "GET",
@@ -39,7 +41,7 @@ export async function onRequest(context) {
     });
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: `Erreur Proxy Edge : ${err.message}` }),
+      JSON.stringify({ error: `Erreur Proxy Pages: ${err.message}` }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
