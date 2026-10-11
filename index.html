@@ -66,13 +66,12 @@
                  class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition shadow-inner">
         </div>
 
-        <!-- Périmètre -->
+        <!-- Périmètre Mode -->
         <div class="md:col-span-3 space-y-1">
           <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Périmètre</label>
           <select id="scopeMode" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500">
             <option value="prefix" selected>Page &amp; Sous-dossiers</option>
             <option value="domain">Domaine &amp; Sous-domaines</option>
-            <option value="exact">URL Exacte uniquement</option>
           </select>
         </div>
 
@@ -151,7 +150,7 @@
         </div>
       </div>
       <div id="logOutput" class="bg-slate-950 rounded-xl p-3 font-mono text-[11px] leading-relaxed text-slate-300 h-44 overflow-y-auto space-y-1 border border-slate-900 select-text">
-        <div class="text-slate-500">[SYSTEM] Application initialisée. Proxy Cloudflare Pages actif.</div>
+        <div class="text-slate-500">[SYSTEM] Application initialisée. Filtre d'images API configuré.</div>
       </div>
     </section>
 
@@ -181,7 +180,7 @@
 
   </main>
 
-  <!-- Lightbox -->
+  <!-- Visionneuse Lightbox -->
   <div id="lightbox" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-md hidden flex flex-col justify-between p-3 sm:p-6">
     <div class="flex items-center justify-between text-white border-b border-slate-800/80 pb-3">
       <div id="lightboxMeta" class="text-xs font-mono text-slate-300 truncate max-w-[80%]"></div>
@@ -270,10 +269,18 @@
       const limit = document.getElementById("limitCount").value;
       const yearFrom = document.getElementById("yearFrom").value;
       const yearTo = document.getElementById("yearTo").value;
+      const formatFilter = document.getElementById("formatFilter").value;
 
-      // Utilisation du paramètre matchType explicite pour soulager le serveur CDX
+      // Filtre explicite envoyé à l'API Archive.org
+      let filterParam = "&filter=mimetype:image/.*";
+      if (formatFilter !== "all") {
+        filterParam = "&filter=original:.*\\." + formatFilter;
+      }
+
       let cdx = "https://web.archive.org/cdx/search/cdx?url=" + encodeURIComponent(domain)
               + "&matchType=" + scope
+              + filterParam
+              + "&filter=statuscode:200"
               + "&fl=timestamp,original,mimetype,statuscode,digest"
               + "&collapse=digest"
               + "&output=json&limit=" + limit;
@@ -300,8 +307,7 @@
       document.getElementById("btnStop").disabled = false;
       document.getElementById("statusIndicator").innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping"></span> Extraction en cours...';
 
-      log("NET", "Requête CDX via Proxy pour : " + queryObj.domain);
-      log("NET", "URL Cible : " + proxiedUrl);
+      log("NET", "Requête CDX vers Archive.org pour : " + queryObj.domain);
 
       abortController = new AbortController();
       const startTime = Date.now();
@@ -351,11 +357,10 @@
 
     function processCdxData(rows) {
       if (!rows || rows.length <= 1) {
-        log("WARN", "Aucun résultat trouvé. Essayez de réduire le filtre ou de changer la période.");
+        log("WARN", "Aucune image trouvée. Essayez d'élargir la période ou d'augmenter la limite.");
         return;
       }
 
-      const formatFilter = document.getElementById("formatFilter").value;
       const dataRows = rows.slice(1);
       const seenDigests = new Set();
       let count = 0;
@@ -367,14 +372,7 @@
         const status = row[3];
         const digest = row[4];
 
-        let isTargetFormat = mimetype.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|svg)/i.test(originalUrl);
-        if (formatFilter !== "all") {
-          isTargetFormat = originalUrl.toLowerCase().includes("." + formatFilter);
-        }
-
-        const is200 = status === "200" || status === "200OK";
-
-        if (isTargetFormat && is200 && digest && !seenDigests.has(digest)) {
+        if (digest && !seenDigests.has(digest)) {
           seenDigests.add(digest);
           
           const rawImageUrl = "https://web.archive.org/web/" + timestamp + "im_/" + originalUrl;
